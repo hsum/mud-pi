@@ -5,8 +5,7 @@ My fork of the most excellent, MUD Pi, written by Mark Frimston.
 
 I tried to implement Python practices I've picked up to improve clarity.
 
-A simple text-based Multi-User Dungeon (MUD) game, which could be run on a 
-Raspberry Pi or other low-end server.
+A simple text-based Multi-User Dungeon (MUD) game.
 
 
 Requirements
