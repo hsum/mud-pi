@@ -1,6 +1,10 @@
 MUD Pi
 ======
 
+My fork of the most excellent, MUD Pi, written by Mark Frimston.
+
+I tried to implement Python practices I've picked up to improve clarity.
+
 A simple text-based Multi-User Dungeon (MUD) game, which could be run on a 
 Raspberry Pi or other low-end server.
 
@@ -8,7 +12,7 @@ Raspberry Pi or other low-end server.
 Requirements
 ------------
 
-You will need to install _Python_ (2.7+ or 3.3+) where you wish to run the 
+You will need to install a modern _Python_ 3 where you wish to run the 
 server. Installers for Windows and Mac can be found at 
 <http://www.python.org/download/>. There are also tarballs for Linux, although 
 the best way to install on Linux would be via the package manager.
@@ -37,6 +41,10 @@ interpreter. To stop the server, simply close the terminal window.
 From the terminal, change to the directory containing the script and run 
 
 	python simplemud.py
+
+	or
+
+	python complexmud.py
 	
 Note, if you are connected to the machine via SSH, you will find that the 
 script stops running when you quit the SSH session. A simple way to leave the 
