@@ -158,7 +158,7 @@ while True:
     mud.update()
 
     # go through any newly connected players
-    for player_id in mud.get_new_players():
+    for player_id in mud.events_new_player:
 
         # add the new player to the dictionary, noting that they've not been
         # named yet.
@@ -174,7 +174,7 @@ while True:
         mud.send_message(player_id, "What is your name?")
 
     # go through any recently disconnected players
-    for player_id in mud.get_disconnected_players():
+    for player_id in mud.events_player_left:
 
         # if for any reason the player isn't in the player map, skip them and
         # move on to the next one
@@ -192,7 +192,7 @@ while True:
         del(players[player_id])
 
     # go through any new commands sent from players
-    for player_id, (command, params) in mud.get_commands():
+    for player_id, (command, params) in mud.events_command:
 
         # if for any reason the player isn't in the player map, skip them and
         # move on to the next one
