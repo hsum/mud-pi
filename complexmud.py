@@ -158,87 +158,78 @@ while True:
     mud.update()
 
     # go through any newly connected players
-    while True:
-        try:
-            player_id = mud.events_new_player.popleft()
+    while mud.events_new_player:
+        player_id = mud.events_new_player.popleft()
 
-            # add the new player to the dictionary, noting that they've not been
-            # named yet.
-            # The dictionary key is the player's id number. We set their room to
-            # None initially until they have entered a name
-            # Try adding more player stats - level, gold, inventory, etc
-            players[player_id] = {
-                "name": None,
-                "room": None,
-            }
+        # add the new player to the dictionary, noting that they've not been
+        # named yet.
+        # The dictionary key is the player's id number. We set their room to
+        # None initially until they have entered a name
+        # Try adding more player stats - level, gold, inventory, etc
+        players[player_id] = {
+            "name": None,
+            "room": None,
+        }
 
-            # send the new player a prompt for their name
-            mud.send_message(player_id, "What is your name?")
-        except IndexError:
-            break
+        # send the new player a prompt for their name
+        mud.send_message(player_id, "What is your name?")
 
     # go through any recently disconnected players
-    while True:
-        try:
-            player_id = mud.events_player_left.popleft()
+    while mud.events_player_left:
+        player_id = mud.events_player_left.popleft()
 
-            # if for any reason the player isn't in the player map, skip them and
-            # move on to the next one
-            if player_id not in players:
-                continue
+        # if for any reason the player isn't in the player map, skip them and
+        # move on to the next one
+        if player_id not in players:
+            continue
+
+        # go through all the players in the game
+        for pid, pl in players.items():
+            # send each player a message to tell them about the disconnected
+            # player
+            mud.send_message(pid, "{} quit the game".format(
+                                                        players[player_id]["name"]))
+
+        # remove the player's entry in the player dictionary
+        del(players[player_id])
+
+    # go through any new commands sent from players
+    while mud.events_command:
+        player_id, (command, params) = mud.events_command.popleft()
+
+        # if for any reason the player isn't in the player map, skip them and
+        # move on to the next one
+        if player_id not in players:
+            continue
+
+        # if the player hasn't given their name yet, use this first command as
+        # their name and move them to the starting room.
+        if players[player_id]["name"] is None:
+
+            players[player_id]["name"] = command
+            players[player_id]["room"] = "Tavern"
 
             # go through all the players in the game
             for pid, pl in players.items():
-                # send each player a message to tell them about the disconnected
-                # player
-                mud.send_message(pid, "{} quit the game".format(
-                                                            players[player_id]["name"]))
+                # send each player a message to tell them about the new player
+                mud.send_message(pid, "{} entered the game".format(
+                                                        players[player_id]["name"]))
 
-            # remove the player's entry in the player dictionary
-            del(players[player_id])
-        except IndexError:
-            break
+            # send the new player a welcome message
+            mud.send_message(player_id, "Welcome to the game, {}. ".format(
+                                                           players[player_id]["name"])
+                             + "Type 'help' for a list of commands. Have fun!")
 
-    # go through any new commands sent from players
-    while True:
-        try:
-            player_id, (command, params) = mud.events_command.popleft()
+            # send the new player the description of their current room
+            mud.send_message(player_id, rooms[players[player_id]["room"]]["description"])
 
-            # if for any reason the player isn't in the player map, skip them and
-            # move on to the next one
-            if player_id not in players:
-                continue
-
-            # if the player hasn't given their name yet, use this first command as
-            # their name and move them to the starting room.
-            if players[player_id]["name"] is None:
-
-                players[player_id]["name"] = command
-                players[player_id]["room"] = "Tavern"
-
-                # go through all the players in the game
-                for pid, pl in players.items():
-                    # send each player a message to tell them about the new player
-                    mud.send_message(pid, "{} entered the game".format(
-                                                            players[player_id]["name"]))
-
-                # send the new player a welcome message
-                mud.send_message(player_id, "Welcome to the game, {}. ".format(
-                                                               players[player_id]["name"])
-                                 + "Type 'help' for a list of commands. Have fun!")
-
-                # send the new player the description of their current room
-                mud.send_message(player_id, rooms[players[player_id]["room"]]["description"])
-
-            # each of the possible commands is handled below. Try adding new
-            # commands to the game!
+        # each of the possible commands is handled below. Try adding new
+        # commands to the game!
+        else:
+            func = commands.get(command)
+            if func:
+                func(mud, player_id, command, params)
             else:
-                func = commands.get(command)
-                if func:
-                    func(mud, player_id, command, params)
-                else:
-                    # some other, unrecognised command
-                    # send back an 'unknown command' message
-                    mud.send_message(player_id, "Unknown command '{}'".format(command))
-        except IndexError:
-            break
+                # some other, unrecognised command
+                # send back an 'unknown command' message
+                mud.send_message(player_id, "Unknown command '{}'".format(command))
