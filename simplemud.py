@@ -57,170 +57,182 @@ while True:
     mud.update()
 
     # go through any newly connected players
-    for player_id in mud.events_new_player:
+    while True:
+        try:
+            player_id = mud.events_new_player.popleft()
 
-        # add the new player to the dictionary, noting that they've not been
-        # named yet.
-        # The dictionary key is the player's id number. We set their room to
-        # None initially until they have entered a name
-        # Try adding more player stats - level, gold, inventory, etc
-        players[player_id] = {
-            "name": None,
-            "room": None,
-        }
+            # add the new player to the dictionary, noting that they've not been
+            # named yet.
+            # The dictionary key is the player's id number. We set their room to
+            # None initially until they have entered a name
+            # Try adding more player stats - level, gold, inventory, etc
+            players[player_id] = {
+                "name": None,
+                "room": None,
+            }
 
-        # send the new player a prompt for their name
-        mud.send_message(player_id, "What is your name?")
+            # send the new player a prompt for their name
+            mud.send_message(player_id, "What is your name?")
+        except IndexError:
+            break
 
     # go through any recently disconnected players
-    for player_id in mud.events_player_left:
+    while True:
+        try:
+            player_id = mud.events_player_left.popleft()
 
-        # if for any reason the player isn't in the player map, skip them and
-        # move on to the next one
-        if player_id not in players:
-            continue
-
-        # go through all the players in the game
-        for pid, pl in players.items():
-            # send each player a message to tell them about the diconnected
-            # player
-            mud.send_message(pid, "{} quit the game".format(
-                                                        players[player_id]["name"]))
-
-        # remove the player's entry in the player dictionary
-        del(players[player_id])
-
-    # go through any new commands sent from players
-    for player_id, (command, params) in mud.events_command:
-
-        # if for any reason the player isn't in the player map, skip them and
-        # move on to the next one
-        if player_id not in players:
-            continue
-
-        # if the player hasn't given their name yet, use this first command as
-        # their name and move them to the starting room.
-        if players[player_id]["name"] is None:
-
-            players[player_id]["name"] = command
-            players[player_id]["room"] = "Tavern"
+            # if for any reason the player isn't in the player map, skip them and
+            # move on to the next one
+            if player_id not in players:
+                continue
 
             # go through all the players in the game
             for pid, pl in players.items():
-                # send each player a message to tell them about the new player
-                mud.send_message(pid, "{} entered the game".format(
-                                                        players[player_id]["name"]))
+                # send each player a message to tell them about the diconnected
+                # player
+                mud.send_message(pid, "{} quit the game".format(
+                                                            players[player_id]["name"]))
 
-            # send the new player a welcome message
-            mud.send_message(player_id, "Welcome to the game, {}. ".format(
-                                                           players[player_id]["name"])
-                             + "Type 'help' for a list of commands. Have fun!")
+            # remove the player's entry in the player dictionary
+            del(players[player_id])
+        except IndexError:
+            break
 
-            # send the new player the description of their current room
-            mud.send_message(player_id, rooms[players[player_id]["room"]]["description"])
+    # go through any new commands sent from players
+    while True:
+        try:
+            player_id, (command, params) = mud.events_command.popleft()
 
-        # each of the possible commands is handled below. Try adding new
-        # commands to the game!
+            # if for any reason the player isn't in the player map, skip them and
+            # move on to the next one
+            if player_id not in players:
+                continue
 
-        # 'help' command
-        elif command == "help":
+            # if the player hasn't given their name yet, use this first command as
+            # their name and move them to the starting room.
+            if players[player_id]["name"] is None:
 
-            # send the player back the list of possible commands
-            mud.send_message(player_id, "Commands:")
-            mud.send_message(player_id, "  say <message>  - Says something out loud, "
-                                 + "e.g. 'say Hello'")
-            mud.send_message(player_id, "  look           - Examines the "
-                                 + "surroundings, e.g. 'look'")
-            mud.send_message(player_id, "  go <exit>      - Moves through the exit "
-                                 + "specified, e.g. 'go outside'")
-
-        # 'say' command
-        elif command == "say":
-
-            # go through every player in the game
-            for pid, pl in players.items():
-                # if they're in the same room as the player
-                if players[pid]["room"] == players[player_id]["room"]:
-                    # send them a message telling them what the player said
-                    mud.send_message(pid, "{} says: {}".format(
-                                                players[player_id]["name"], ' '.join(params)))
-
-        # 'look' command
-        elif command == "look":
-
-            # store the player's current room
-            rm = rooms[players[player_id]["room"]]
-
-            # send the player back the description of their current room
-            mud.send_message(player_id, rm["description"])
-
-            playershere = []
-            # go through every player in the game
-            for pid, pl in players.items():
-                # if they're in the same room as the player
-                if players[pid]["room"] == players[player_id]["room"]:
-                    # ... and they have a name to be shown
-                    if players[pid]["name"] is not None:
-                        # add their name to the list
-                        playershere.append(players[pid]["name"])
-
-            # send player a message containing the list of players in the room
-            mud.send_message(player_id, "Players here: {}".format(
-                                                    ", ".join(playershere)))
-
-            # send player a message containing the list of exits from this room
-            mud.send_message(player_id, "Exits are: {}".format(
-                                                    ", ".join(rm["exits"])))
-
-        # 'go' command
-        elif command == "go":
-
-            # store the exit name
-            ex = ' '.join(params).lower()
-
-            # store the player's current room
-            rm = rooms[players[player_id]["room"]]
-
-            # if the specified exit is found in the room's exits list
-            if ex in rm["exits"]:
+                players[player_id]["name"] = command
+                players[player_id]["room"] = "Tavern"
 
                 # go through all the players in the game
                 for pid, pl in players.items():
-                    # if player is in the same room and isn't the player
-                    # sending the command
-                    if players[pid]["room"] == players[player_id]["room"] \
-                            and pid != player_id:
-                        # send them a message telling them that the player
-                        # left the room
-                        mud.send_message(pid, "{} left via exit '{}'".format(
-                                                      players[player_id]["name"], ex))
+                    # send each player a message to tell them about the new player
+                    mud.send_message(pid, "{} entered the game".format(
+                                                            players[player_id]["name"]))
 
-                # update the player's current room to the one the exit leads to
-                players[player_id]["room"] = rm["exits"][ex]
+                # send the new player a welcome message
+                mud.send_message(player_id, "Welcome to the game, {}. ".format(
+                                                               players[player_id]["name"])
+                                 + "Type 'help' for a list of commands. Have fun!")
+
+                # send the new player the description of their current room
+                mud.send_message(player_id, rooms[players[player_id]["room"]]["description"])
+
+            # each of the possible commands is handled below. Try adding new
+            # commands to the game!
+
+            # 'help' command
+            elif command == "help":
+
+                # send the player back the list of possible commands
+                mud.send_message(player_id, "Commands:")
+                mud.send_message(player_id, "  say <message>  - Says something out loud, "
+                                     + "e.g. 'say Hello'")
+                mud.send_message(player_id, "  look           - Examines the "
+                                     + "surroundings, e.g. 'look'")
+                mud.send_message(player_id, "  go <exit>      - Moves through the exit "
+                                     + "specified, e.g. 'go outside'")
+
+            # 'say' command
+            elif command == "say":
+
+                # go through every player in the game
+                for pid, pl in players.items():
+                    # if they're in the same room as the player
+                    if players[pid]["room"] == players[player_id]["room"]:
+                        # send them a message telling them what the player said
+                        mud.send_message(pid, "{} says: {}".format(
+                                                    players[player_id]["name"], ' '.join(params)))
+
+            # 'look' command
+            elif command == "look":
+
+                # store the player's current room
                 rm = rooms[players[player_id]["room"]]
 
-                # go through all the players in the game
+                # send the player back the description of their current room
+                mud.send_message(player_id, rm["description"])
+
+                playershere = []
+                # go through every player in the game
                 for pid, pl in players.items():
-                    # if player is in the same (new) room and isn't the player
-                    # sending the command
-                    if players[pid]["room"] == players[player_id]["room"] \
-                            and pid != player_id:
-                        # send them a message telling them that the player
-                        # entered the room
-                        mud.send_message(pid,
-                                         "{} arrived via exit '{}'".format(
-                                                      players[player_id]["name"], ex))
+                    # if they're in the same room as the player
+                    if players[pid]["room"] == players[player_id]["room"]:
+                        # ... and they have a name to be shown
+                        if players[pid]["name"] is not None:
+                            # add their name to the list
+                            playershere.append(players[pid]["name"])
 
-                # send the player a message telling them where they are now
-                mud.send_message(player_id, "You arrive at '{}'".format(
-                                                          players[player_id]["room"]))
+                # send player a message containing the list of players in the room
+                mud.send_message(player_id, "Players here: {}".format(
+                                                        ", ".join(playershere)))
 
-            # the specified exit wasn't found in the current room
+                # send player a message containing the list of exits from this room
+                mud.send_message(player_id, "Exits are: {}".format(
+                                                        ", ".join(rm["exits"])))
+
+            # 'go' command
+            elif command == "go":
+
+                # store the exit name
+                ex = ' '.join(params).lower()
+
+                # store the player's current room
+                rm = rooms[players[player_id]["room"]]
+
+                # if the specified exit is found in the room's exits list
+                if ex in rm["exits"]:
+
+                    # go through all the players in the game
+                    for pid, pl in players.items():
+                        # if player is in the same room and isn't the player
+                        # sending the command
+                        if players[pid]["room"] == players[player_id]["room"] \
+                                and pid != player_id:
+                            # send them a message telling them that the player
+                            # left the room
+                            mud.send_message(pid, "{} left via exit '{}'".format(
+                                                          players[player_id]["name"], ex))
+
+                    # update the player's current room to the one the exit leads to
+                    players[player_id]["room"] = rm["exits"][ex]
+                    rm = rooms[players[player_id]["room"]]
+
+                    # go through all the players in the game
+                    for pid, pl in players.items():
+                        # if player is in the same (new) room and isn't the player
+                        # sending the command
+                        if players[pid]["room"] == players[player_id]["room"] \
+                                and pid != player_id:
+                            # send them a message telling them that the player
+                            # entered the room
+                            mud.send_message(pid,
+                                             "{} arrived via exit '{}'".format(
+                                                          players[player_id]["name"], ex))
+
+                    # send the player a message telling them where they are now
+                    mud.send_message(player_id, "You arrive at '{}'".format(
+                                                              players[player_id]["room"]))
+
+                # the specified exit wasn't found in the current room
+                else:
+                    # send back an 'unknown exit' message
+                    mud.send_message(player_id, "Unknown exit '{}'".format(ex))
+
+            # some other, unrecognised command
             else:
-                # send back an 'unknown exit' message
-                mud.send_message(player_id, "Unknown exit '{}'".format(ex))
-
-        # some other, unrecognised command
-        else:
-            # send back an 'unknown command' message
-            mud.send_message(player_id, "Unknown command '{}'".format(command))
+                # send back an 'unknown command' message
+                mud.send_message(player_id, "Unknown command '{}'".format(command))
+        except IndexError:
+            break

@@ -106,10 +106,6 @@ class MudServer(object):
         'get_disconnected_players' and 'get_commands' methods.
         It should be called in a loop to keep the game running.
         """
-        self.events_new_player.clear()
-        self.events_command.clear()
-        self.events_player_left.clear()
-
         # check for new stuff
         self._check_for_new_connections()
         self._check_for_disconnected()
